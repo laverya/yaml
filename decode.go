@@ -38,11 +38,13 @@ type parser struct {
 	doc    *node
 }
 
-func newParser(b []byte) *parser {
+func newParser(b []byte, parseComments bool) *parser {
 	p := parser{}
 	if !yaml_parser_initialize(&p.parser) {
 		panic("failed to initialize YAML emitter")
 	}
+
+	p.parser.parse_comments = parseComments
 
 	if len(b) == 0 {
 		b = []byte{'\n'}
@@ -139,12 +141,21 @@ func (p *parser) document() *node {
 	n.anchors = make(map[string]*node)
 	p.doc = n
 	p.skip()
-	next := p.parse()
 	// Chomp all comments, as they can't be part of the top-level YAML structure
-	for next.kind == commentNode {
-		next = p.parse()
+	// and prepend them to the document node
+	var comments []*node
+	for {
+		next := p.parse()
+		if next.kind == commentNode {
+			comments = append(comments, next)
+		} else {
+			if p.parser.parse_comments {
+				next.children = append(comments, next.children...)
+			}
+			n.children = append(n.children, next)
+			break
+		}
 	}
-	n.children = append(n.children, next)
 	if p.event.typ != yaml_DOCUMENT_END_EVENT {
 		panic("expected end of document event but got " + strconv.Itoa(int(p.event.typ)))
 	}
@@ -631,14 +642,19 @@ func (d *decoder) mappingSlice(n *node, out reflect.Value) (good bool) {
 	var key *node
 	var value *node
 	var keySet bool
+	var comments []*node
 	for _, child := range n.children {
 		if child.kind == commentNode {
-			slice = append(slice, MapItem{
-				Key: Comment{
-					Value: child.value,
-				},
-				Value: nil,
-			})
+			if !keySet {
+				slice = append(slice, MapItem{
+					Key: Comment{
+						Value: child.value,
+					},
+					Value: nil,
+				})
+			} else {
+				comments = append(comments, child)
+			}
 		} else {
 			if !keySet {
 				keySet = true
@@ -650,14 +666,17 @@ func (d *decoder) mappingSlice(n *node, out reflect.Value) (good bool) {
 					d.merge(value, out)
 					continue
 				}
+				// key.children = append(commentQueue, key.children...)
 				item := MapItem{}
 				k := reflect.ValueOf(&item.Key).Elem()
 				if d.unmarshal(key, k) {
 					v := reflect.ValueOf(&item.Value).Elem()
+					value.children = append(comments, value.children...)
 					if d.unmarshal(value, v) {
 						slice = append(slice, item)
 					}
 				}
+				comments = make([]*node, 0)
 			}
 		}
 	}

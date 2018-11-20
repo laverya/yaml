@@ -691,10 +691,12 @@ func yaml_emitter_emit_alias(emitter *yaml_emitter_t, event *yaml_event_t) bool 
 }
 
 func yaml_emitter_emit_comment(emitter *yaml_emitter_t, event *yaml_event_t) bool {
-	if !yaml_emitter_write_indent(emitter) {
-		return false
+	if emitter.line > 0 || emitter.column > 0 { // no newline if on first line
+		if !put_break(emitter) {
+			return false
+		}
 	}
-	out := []byte{'#'}
+	out := []byte{}
 	out = append(out, event.value...)
 	return write_all(emitter, out)
 }

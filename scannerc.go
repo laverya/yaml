@@ -1439,13 +1439,15 @@ func yaml_parser_fetch_plain_scalar(parser *yaml_parser_t) bool {
 func yaml_parser_fetch_comment(parser *yaml_parser_t) bool {
 	start_mark := parser.mark
 	var comment []byte
-	skip(parser)
 	for !is_breakz(parser.buffer, parser.buffer_pos) {
 		comment = read(parser, comment)
 		if parser.unread < 1 && !yaml_parser_update_buffer(parser, 1) {
 			return false
 		}
 	}
+	// NOTE: this isn't perfect as we need to somehow only calculate the number of spaces before or
+	// after the indent in case it is not canonical.
+	comment = append(bytes.Repeat([]byte{' '}, start_mark.column), comment...)
 	token := yaml_token_t{
 		typ:        yaml_COMMENT_TOKEN,
 		start_mark: start_mark,
