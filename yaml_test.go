@@ -20,6 +20,7 @@ func TestComments(t *testing.T) {
 		{
 			name: "comment indent",
 			data: `# comment 0
+
 # comment 000
 zkey1: zvalue1
 # comment 1
@@ -36,8 +37,13 @@ ykey2:
     # comment 43
   # comment 5
     # comment 6
+wkey5: |
+  555
+
+  555
 # comment 7`,
 			expected: `# comment 0
+
 # comment 000
 zkey1: zvalue1
 # comment 1
@@ -54,6 +60,11 @@ ykey2:
     # comment 43
   # comment 5
     # comment 6
+wkey5: |
+  555
+
+  555
+
 # comment 7
 `,
 		},
