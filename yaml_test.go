@@ -3,7 +3,7 @@ package yaml_test
 import (
 	"testing"
 
-	"github.com/mozilla-services/yaml"
+	"github.com/emosbaugh/yaml"
 )
 
 func TestComments(t *testing.T) {
@@ -16,6 +16,18 @@ func TestComments(t *testing.T) {
 			name:     "basic",
 			data:     "key1: value1",
 			expected: "key1: value1\n",
+		},
+		{
+			name: "missing values",
+			data: `key1:
+  # a wild comment
+  key2:
+
+`,
+			expected: `key1:
+  # a wild comment
+  key2: null
+`,
 		},
 		{
 			name: "comment indent",
