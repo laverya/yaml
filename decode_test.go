@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mozilla-services/yaml"
+	"github.com/emosbaugh/yaml"
 	. "gopkg.in/check.v1"
 )
 
